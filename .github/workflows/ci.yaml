@@ -25,7 +25,7 @@ jobs:
   build:
     name: Build & Push Image
     needs: setup
-    uses: ravencalamitous/devops-central/.github/workflows/build-push.yaml@main
+    uses: ravencalamitouss/devops-central/.github/workflows/build-push.yaml@main
     with:
       service_name: logistics-pickup
       environment: ${{ needs.setup.outputs.environment }}
@@ -36,7 +36,7 @@ jobs:
   update-helm:
     name: Update Helm Values
     needs: [setup, build]
-    uses: ravencalamitous/devops-central/.github/workflows/update-helm.yaml@main
+    uses: ravencalamitouss/devops-central/.github/workflows/update-helm.yaml@main
     with:
       service_name: logistics-pickup
       environment: ${{ needs.setup.outputs.environment }}

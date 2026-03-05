@@ -31,9 +31,7 @@ jobs:
       environment: ${{ needs.setup.outputs.environment }}
       branch: ${{ github.ref_name }}
       sha: ${{ github.sha }}
-    secrets:
-      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+    secrets: inherit
 
   update-helm:
     name: Update Helm Values
@@ -43,5 +41,4 @@ jobs:
       service_name: logistics-pickup
       environment: ${{ needs.setup.outputs.environment }}
       image_tag: ${{ needs.build.outputs.image_tag }}
-    secrets:
-      HELM_REPO_TOKEN: ${{ secrets.HELM_REPO_TOKEN }}
+    secrets: inherit

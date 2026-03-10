@@ -36,7 +36,6 @@ jobs:
   build:
     name: Build & Push
     needs: setup
-    timeout-minutes: 15
     uses: ravencalamitouss/devops-central/.github/workflows/build-push.yaml@main
     with:
       service_name: logistics-pickup
@@ -49,7 +48,6 @@ jobs:
   update-helm:
     name: Update Helm
     needs: [setup, build]
-    timeout-minutes: 5
     uses: ravencalamitouss/devops-central/.github/workflows/update-helm.yaml@main
     with:
       service_name: logistics-pickup

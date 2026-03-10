@@ -4,38 +4,52 @@ on:
   push:
     branches:
       - dev
-      - main
+    tags:
+      - 'v*'
+
+concurrency:
+  group: ci-logistics-pickup-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   setup:
     name: Setup
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     outputs:
       environment: ${{ steps.env.outputs.environment }}
+      image_tag: ${{ steps.env.outputs.image_tag }}
     steps:
-      - name: Set environment
+      - name: Determine environment and image tag
         id: env
         run: |
-          if [ "${{ github.ref_name }}" = "main" ]; then
+          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            VERSION="${{ github.ref_name }}"
             echo "environment=prod" >> $GITHUB_OUTPUT
+            echo "image_tag=${VERSION}" >> $GITHUB_OUTPUT
           else
             echo "environment=dev" >> $GITHUB_OUTPUT
+            echo "image_tag=dev-${SHORT_SHA}" >> $GITHUB_OUTPUT
           fi
 
   build:
-    name: Build & Push Image
+    name: Build & Push
     needs: setup
+    timeout-minutes: 15
     uses: ravencalamitouss/devops-central/.github/workflows/build-push.yaml@main
     with:
       service_name: logistics-pickup
       environment: ${{ needs.setup.outputs.environment }}
+      image_tag: ${{ needs.setup.outputs.image_tag }}
       branch: ${{ github.ref_name }}
       sha: ${{ github.sha }}
     secrets: inherit
 
   update-helm:
-    name: Update Helm Values
+    name: Update Helm
     needs: [setup, build]
+    timeout-minutes: 5
     uses: ravencalamitouss/devops-central/.github/workflows/update-helm.yaml@main
     with:
       service_name: logistics-pickup

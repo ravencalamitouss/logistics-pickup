@@ -3,54 +3,108 @@ name: CI - Pickup Service
 on:
   push:
     branches:
+      - 'feature/*'
       - dev
     tags:
       - 'v*'
+  pull_request:
+    branches:
+      - dev
+      - 'release/*'
 
 concurrency:
   group: ci-logistics-pickup-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  setup:
-    name: Setup
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    outputs:
-      environment: ${{ steps.env.outputs.environment }}
-      image_tag: ${{ steps.env.outputs.image_tag }}
-    steps:
-      - name: Determine environment and image tag
-        id: env
-        run: |
-          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
-          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
-            VERSION="${{ github.ref_name }}"
-            echo "environment=prod" >> $GITHUB_OUTPUT
-            echo "image_tag=${VERSION}" >> $GITHUB_OUTPUT
-          else
-            echo "environment=dev" >> $GITHUB_OUTPUT
-            echo "image_tag=dev-${SHORT_SHA}" >> $GITHUB_OUTPUT
-          fi
+  lint-test:
+    name: Lint, Test & Security
+    uses: ravencalamitouss/devops-central/.github/workflows/lint-test.yaml@main
+    with:
+      service_name: logistics-pickup
+    secrets: inherit
 
   build:
     name: Build & Push
-    needs: setup
+    needs: lint-test
+    if: github.ref == 'refs/heads/dev'
     uses: ravencalamitouss/devops-central/.github/workflows/build-push.yaml@main
     with:
       service_name: logistics-pickup
-      environment: ${{ needs.setup.outputs.environment }}
-      image_tag: ${{ needs.setup.outputs.image_tag }}
+      environment: dev
       branch: ${{ github.ref_name }}
       sha: ${{ github.sha }}
     secrets: inherit
 
-  update-helm:
-    name: Update Helm
-    needs: [setup, build]
+  api-test-dev:
+    name: API Test (Dev)
+    needs: lint-test
+    if: github.ref == 'refs/heads/dev'
+    uses: ravencalamitouss/devops-central/.github/workflows/api-test.yaml@main
+    with:
+      service_name: logistics-pickup
+    secrets: inherit
+
+  update-helm-dev:
+    name: Update Helm Dev
+    needs: [build, api-test-dev]
+    if: github.ref == 'refs/heads/dev'
     uses: ravencalamitouss/devops-central/.github/workflows/update-helm.yaml@main
     with:
       service_name: logistics-pickup
-      environment: ${{ needs.setup.outputs.environment }}
+      environment: dev
       image_tag: ${{ needs.build.outputs.image_tag }}
+    secrets: inherit
+
+  retag-staging:
+    name: Retag for Staging
+    needs: lint-test
+    if: startsWith(github.ref, 'refs/heads/release/')
+    uses: ravencalamitouss/devops-central/.github/workflows/retag.yaml@main
+    with:
+      service_name: logistics-pickup
+      source_tag: dev-latest
+      target_tag: rc-${{ github.ref_name != '' && replace(github.ref_name, 'release/', '') || 'latest' }}
+    secrets: inherit
+
+  api-test-staging:
+    name: API Test (Staging)
+    needs: retag-staging
+    if: startsWith(github.ref, 'refs/heads/release/')
+    uses: ravencalamitouss/devops-central/.github/workflows/api-test.yaml@main
+    with:
+      service_name: logistics-pickup
+    secrets: inherit
+
+  update-helm-staging:
+    name: Update Helm Staging
+    needs: [retag-staging, api-test-staging]
+    if: startsWith(github.ref, 'refs/heads/release/')
+    uses: ravencalamitouss/devops-central/.github/workflows/update-helm.yaml@main
+    with:
+      service_name: logistics-pickup
+      environment: staging
+      image_tag: ${{ needs.retag-staging.outputs.image_tag }}
+    secrets: inherit
+
+  retag-prod:
+    name: Retag for Prod
+    needs: lint-test
+    if: startsWith(github.ref, 'refs/tags/v')
+    uses: ravencalamitouss/devops-central/.github/workflows/retag.yaml@main
+    with:
+      service_name: logistics-pickup
+      source_tag: staging-latest
+      target_tag: ${{ github.ref_name }}
+    secrets: inherit
+
+  update-helm-prod:
+    name: Update Helm Prod
+    needs: retag-prod
+    if: startsWith(github.ref, 'refs/tags/v')
+    uses: ravencalamitouss/devops-central/.github/workflows/update-helm.yaml@main
+    with:
+      service_name: logistics-pickup
+      environment: prod
+      image_tag: ${{ needs.retag-prod.outputs.image_tag }}
     secrets: inherit

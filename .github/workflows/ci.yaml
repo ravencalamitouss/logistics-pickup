@@ -17,17 +17,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  prepare-tags:
-    name: Prepare Tags
-    runs-on: ubuntu-latest
-    outputs:
-      stripped_ref: ${{ steps.strip.outputs.version }}
-    steps:
-      - id: strip
-        run: |
-          VERSION=${GITHUB_REF_NAME#release/}
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          
   lint-test:
     name: Lint, Test & Security
     uses: ravencalamitouss/devops-central/.github/workflows/lint-test.yaml@main
@@ -67,15 +56,32 @@ jobs:
       image_tag: ${{ needs.build.outputs.image_tag }}
     secrets: inherit
 
+  prepare-staging:
+    name: Prepare Staging Tag
+    needs: lint-test
+    if: startsWith(github.ref, 'refs/heads/release/')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      rc_tag: ${{ steps.tag.outputs.rc_tag }}
+    steps:
+      - name: Compute rc tag
+        id: tag
+        run: |
+          BRANCH="${{ github.ref_name }}"
+          RC_TAG="rc-${BRANCH#release/}"
+          echo "rc_tag=${RC_TAG}" >> $GITHUB_OUTPUT
+          echo "RC tag: ${RC_TAG}"
+
   retag-staging:
     name: Retag for Staging
-    needs: lint-test
+    needs: prepare-staging
     if: startsWith(github.ref, 'refs/heads/release/')
     uses: ravencalamitouss/devops-central/.github/workflows/retag.yaml@main
     with:
       service_name: logistics-pickup
       source_tag: dev-latest
-      target_tag: rc-${{ needs.prepare-tags.outputs.stripped_ref || 'latest' }}
+      target_tag: ${{ needs.prepare-staging.outputs.rc_tag }}
     secrets: inherit
 
   api-test-staging:

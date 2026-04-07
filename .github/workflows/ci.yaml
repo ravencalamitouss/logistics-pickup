@@ -17,6 +17,17 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  prepare-tags:
+    name: Prepare Tags
+    runs-on: ubuntu-latest
+    outputs:
+      stripped_ref: ${{ steps.strip.outputs.version }}
+    steps:
+      - id: strip
+        run: |
+          VERSION=${GITHUB_REF_NAME#release/}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          
   lint-test:
     name: Lint, Test & Security
     uses: ravencalamitouss/devops-central/.github/workflows/lint-test.yaml@main
@@ -64,7 +75,7 @@ jobs:
     with:
       service_name: logistics-pickup
       source_tag: dev-latest
-      target_tag: rc-${{ github.ref_name != '' && replace(github.ref_name, 'release/', '') || 'latest' }}
+      target_tag: rc-${{ needs.prepare-tags.outputs.stripped_ref || 'latest' }}
     secrets: inherit
 
   api-test-staging:

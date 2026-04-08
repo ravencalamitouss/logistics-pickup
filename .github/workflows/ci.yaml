@@ -1,5 +1,9 @@
 name: CI - Pickup Service
 
+permissions:
+  contents: read
+  packages: write
+
 on:
   push:
     branches:

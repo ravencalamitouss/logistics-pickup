@@ -32,13 +32,12 @@ jobs:
     name: Build & Push
     needs: lint-test
     if: github.ref == 'refs/heads/dev'
-    uses: ravencalamitous/devops-central/.github/workflows/build-push.yaml@main
+    uses: ravencalamitous/devops-central/.github/workflows/wrapper-build-push.yaml@main
     with:
       service_name: logistics-pickup
       environment: dev
       branch: ${{ github.ref_name }}
       sha: ${{ github.sha }}
-    secrets: inherit
 
   api-test-dev:
     name: API Test (Dev)

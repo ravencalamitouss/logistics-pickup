@@ -1,9 +1,5 @@
 name: CI - Pickup Service
 
-permissions:
-  contents: read
-  packages: write
-
 on:
   push:
     branches:
@@ -23,7 +19,7 @@ concurrency:
 jobs:
   lint-test:
     name: Lint, Test & Security
-    uses: ravencalamitous/devops-central/.github/workflows/lint-test.yaml@main
+    uses: ravencalamitouss/devops-central/.github/workflows/lint-test.yaml@main
     with:
       service_name: logistics-pickup
     secrets: inherit
@@ -32,7 +28,7 @@ jobs:
     name: Build & Push
     needs: lint-test
     if: github.ref == 'refs/heads/dev'
-    uses: ravencalamitous/devops-central/.github/workflows/wrapper-build-push.yaml@main
+    uses: ravencalamitouss/devops-central/.github/workflows/build-push.yaml@main
     with:
       service_name: logistics-pickup
       environment: dev
@@ -43,7 +39,7 @@ jobs:
     name: API Test (Dev)
     needs: lint-test
     if: github.ref == 'refs/heads/dev'
-    uses: ravencalamitous/devops-central/.github/workflows/api-test.yaml@main
+    uses: ravencalamitouss/devops-central/.github/workflows/api-test.yaml@main
     with:
       service_name: logistics-pickup
     secrets: inherit
@@ -52,7 +48,7 @@ jobs:
     name: Update Helm Dev
     needs: [build, api-test-dev]
     if: github.ref == 'refs/heads/dev'
-    uses: ravencalamitous/devops-central/.github/workflows/update-helm.yaml@main
+    uses: ravencalamitouss/devops-central/.github/workflows/update-helm.yaml@main
     with:
       service_name: logistics-pickup
       environment: dev
@@ -80,7 +76,7 @@ jobs:
     name: Retag for Staging
     needs: prepare-staging
     if: startsWith(github.ref, 'refs/heads/release/')
-    uses: ravencalamitous/devops-central/.github/workflows/retag.yaml@main
+    uses: ravencalamitouss/devops-central/.github/workflows/retag.yaml@main
     with:
       service_name: logistics-pickup
       source_tag: dev-latest
@@ -91,7 +87,7 @@ jobs:
     name: API Test (Staging)
     needs: retag-staging
     if: startsWith(github.ref, 'refs/heads/release/')
-    uses: ravencalamitous/devops-central/.github/workflows/api-test.yaml@main
+    uses: ravencalamitouss/devops-central/.github/workflows/api-test.yaml@main
     with:
       service_name: logistics-pickup
     secrets: inherit
@@ -100,7 +96,7 @@ jobs:
     name: Update Helm Staging
     needs: [retag-staging, api-test-staging]
     if: startsWith(github.ref, 'refs/heads/release/')
-    uses: ravencalamitous/devops-central/.github/workflows/update-helm.yaml@main
+    uses: ravencalamitouss/devops-central/.github/workflows/update-helm.yaml@main
     with:
       service_name: logistics-pickup
       environment: staging
@@ -111,7 +107,7 @@ jobs:
     name: Retag for Prod
     needs: lint-test
     if: startsWith(github.ref, 'refs/tags/v')
-    uses: ravencalamitous/devops-central/.github/workflows/retag.yaml@main
+    uses: ravencalamitouss/devops-central/.github/workflows/retag.yaml@main
     with:
       service_name: logistics-pickup
       source_tag: staging-latest
@@ -122,7 +118,7 @@ jobs:
     name: Update Helm Prod
     needs: retag-prod
     if: startsWith(github.ref, 'refs/tags/v')
-    uses: ravencalamitous/devops-central/.github/workflows/update-helm.yaml@main
+    uses: ravencalamitouss/devops-central/.github/workflows/update-helm.yaml@main
     with:
       service_name: logistics-pickup
       environment: prod

@@ -34,6 +34,7 @@ jobs:
       environment: dev
       branch: ${{ github.ref_name }}
       sha: ${{ github.sha }}
+    secrets: inherit
 
   api-test-dev:
     name: API Test (Dev)

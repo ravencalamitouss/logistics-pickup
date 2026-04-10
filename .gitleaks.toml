@@ -6,5 +6,6 @@ paths = [
   "node_modules",
   "coverage",
   "gitleaks",
-  ".tar.gz"
+  ".tar.gz",
+  "README.md"
 ]

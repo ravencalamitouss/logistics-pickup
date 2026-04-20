@@ -5,6 +5,7 @@ on:
     branches:
       - 'feature/*'
       - dev
+      - 'release/*'
     tags:
       - 'v*'
   pull_request:
@@ -59,7 +60,7 @@ jobs:
   prepare-staging:
     name: Prepare Staging Tag
     needs: lint-test
-    if: startsWith(github.base_ref, 'release/')
+    if: startsWith(github.ref, 'refs/heads/release/v') || startsWith(github.base_ref, 'release/v')
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
@@ -76,7 +77,7 @@ jobs:
   retag-staging:
     name: Retag for Staging
     needs: prepare-staging
-    if: startsWith(github.base_ref, 'release/')
+    if: startsWith(github.ref, 'refs/heads/release/v') || startsWith(github.base_ref, 'release/v')
     uses: ravencalamitouss/devops-central/.github/workflows/retag.yaml@main
     with:
       service_name: logistics-pickup
@@ -87,7 +88,7 @@ jobs:
   api-test-staging:
     name: API Test (Staging)
     needs: retag-staging
-    if: startsWith(github.base_ref, 'release/')
+    if: startsWith(github.ref, 'refs/heads/release/v') || startsWith(github.base_ref, 'release/v')
     uses: ravencalamitouss/devops-central/.github/workflows/api-test.yaml@main
     with:
       service_name: logistics-pickup
@@ -96,7 +97,7 @@ jobs:
   update-helm-staging:
     name: Update Helm Staging
     needs: [retag-staging, api-test-staging]
-    if: startsWith(github.base_ref, 'release/')
+    if: startsWith(github.ref, 'refs/heads/release/v') || startsWith(github.base_ref, 'release/v')
     uses: ravencalamitouss/devops-central/.github/workflows/update-helm.yaml@main
     with:
       service_name: logistics-pickup
